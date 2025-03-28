@@ -2,86 +2,70 @@
 #include <Servo.h>
 
 #define SERVO_PIN 9
-#define TIG_PIN 3
-#define ECHO_PIN 2
-
-const int open_angle = 0;
-const int close_angle = 80;
-
-bool is_tagged = false;
 
 Servo servo;
 
-// put function declarations here:
-int get_distance_mm();
-void open_hand();
-void close_hand();
+int target_angle = 0;
+int current_angle = 0;
 
 void setup()
 {
-  // put your setup code here, to run once:
-  servo.attach(SERVO_PIN);
-  Serial.begin(9600);
-  pinMode(TIG_PIN, OUTPUT);
-  pinMode(ECHO_PIN, INPUT);
-  servo.write(0);
+    servo.attach(SERVO_PIN);
+    Serial.begin(9600);
+    servo.write(0);
+    Serial.println("ready");
 }
 
 void loop()
 {
-  // put your main code here, to run repeatedly:
-  int distance = get_distance_mm();
-  
-  // Serial.println(distance);
-  // Serial.println(is_tagged);
-  delay(500);
-
-  if (is_tagged)
-  {
-    if (distance > 200)
+    if (Serial.available())
     {
-      is_tagged = false;
+        String input = Serial.readStringUntil('\n');
+        input.trim();
+
+        Serial.print("arduino receive message: ");
+        Serial.println(input);
+
+        // TODO : 입력값이 숫자인지 확인
+        for (int i = 0; i < input.length(); i++)
+        {
+            if (!isdigit(input[i]))
+            {
+                Serial.println("please input number");
+                return;
+            }
+        }
+        // TODO : 입력값이 0~180 사이의 값인지 확인하고, 그렇지 않으면 에러 메시지를 출력하고 다음 입력을 받도록 수정
+        int input_num = input.toInt();
+        if (input_num < 0 || input_num > 90)
+        {
+            Serial.println("please input between 0~90 ");
+            return;
+        }
+
+        target_angle = input_num;
+        Serial.print("target angle: ");
+        Serial.println(target_angle);
     }
 
-    return;
-  }
+    // TODO : 현재 각도에서 목표 각도까지 서보 모터를 움직이는 코드를 작성
+    int step_angle;
 
-  if (!is_tagged)
-  {
-    if (distance < 50)
+    if (current_angle < target_angle)
     {
-      is_tagged = true;
-
-      close_hand();
-      delay(3000);
-      open_hand();
+        step_angle = min(current_angle + 10, target_angle);
     }
-  }
-}
+    else
+    {
+        step_angle = max(current_angle - 10, target_angle);
+    }
 
-// put function definitions here:
-int get_distance_mm()
-{
-  digitalWrite(TIG_PIN, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(TIG_PIN, LOW);
-  return pulseIn(ECHO_PIN, HIGH) * 340 / 2 / 1000;
-}
+    Serial.print("step_angle: ");
+    Serial.println(step_angle);
 
-void open_hand()
-{
-  for (int i = close_angle; i >= open_angle; i--)
-  {
-    servo.write(i);
-    delay(15);
-  }
-}
+    servo.write(step_angle);
+    current_angle = step_angle;
 
-void close_hand()
-{
-  for (int i = open_angle; i <= close_angle; i++)
-  {
-    servo.write(i);
-    delay(15);
-  }
+    delay(100);
+    Serial.println("ready");;
 }
