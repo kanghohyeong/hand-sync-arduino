@@ -3,13 +3,23 @@ import mediapipe as mp
 import numpy as np
 import serial
 import time
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # 시리얼 포트 설정 (본인 환경에 맞게 수정)
-ser = serial.Serial('/dev/tty.usbmodem1301', 9600)
+serial_port = os.getenv("SERIAL_PORT")
+ser = serial.Serial(serial_port, 9600)
 time.sleep(2)  # 아두이노 초기화 시간
 
 # MediaPipe 초기화
-cap = cv2.VideoCapture(0)
+# cap = cv2.VideoCapture(0)
+
+# IP Webcam 주소
+url = os.getenv("IP_WEBCAM_URL")
+cap = cv2.VideoCapture(url)
+
 mp_hands = mp.solutions.hands
 mp_drawing = mp.solutions.drawing_utils
 
